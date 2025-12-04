@@ -42,9 +42,13 @@ def refresh_token(account):
     # Parse timestamp (handling potential format differences)
     try:
         token_expires_at = datetime.fromisoformat(token_expires_at_str.replace('Z', '+00:00'))
+        if token_expires_at.tzinfo is None:
+            token_expires_at = token_expires_at.replace(tzinfo=timezone.utc)
     except ValueError:
         # Fallback if format is different
         token_expires_at = datetime.strptime(token_expires_at_str, "%Y-%m-%dT%H:%M:%S.%f%z")
+        if token_expires_at.tzinfo is None:
+            token_expires_at = token_expires_at.replace(tzinfo=timezone.utc)
 
     now = datetime.now(timezone.utc)
     
@@ -112,6 +116,8 @@ def fetch_new_posts(account):
     if last_synced_at_str:
         try:
             last_synced_at = datetime.fromisoformat(last_synced_at_str.replace('Z', '+00:00'))
+            if last_synced_at.tzinfo is None:
+                last_synced_at = last_synced_at.replace(tzinfo=timezone.utc)
         except ValueError:
             pass
 
@@ -149,6 +155,8 @@ def fetch_new_posts(account):
             for post in posts:
                 post_timestamp_str = post['timestamp']
                 post_timestamp = datetime.fromisoformat(post_timestamp_str.replace('Z', '+00:00'))
+                if post_timestamp.tzinfo is None:
+                    post_timestamp = post_timestamp.replace(tzinfo=timezone.utc)
                 
                 # Track newest timestamp seen in this run
                 if newest_post_timestamp is None:
@@ -261,8 +269,7 @@ def seed_initial_account():
     if not res.data:
         print("Seeding initial account from .env...")
         # Calculate a default expiry (e.g. 60 days from now) since we don't know when it was created
-        expires_at = datetime.now(timezone.utc) + timedelta(days=60)
-        
+        expires_at = datetime.now(timezone.utc) + timedelta(days=60)        
         account_data = {
             'ig_user_id': ig_user_id,
             'account_name': 'Initial Account', # Placeholder name

@@ -39,14 +39,12 @@ def refresh_token(account):
             return False
 
         params = {
-            'grant_type': 'fb_exchange_token',
-            'client_id': INSTAGRAM_APP_ID,
-            'client_secret': INSTAGRAM_APP_SECRET,
-            'fb_exchange_token': access_token
+            'grant_type': 'ig_refresh_token',
+            'access_token': access_token
         }
-        
+
         try:
-            response = requests.get(get_facebook_api_url("oauth/access_token"), params=params)
+            response = requests.get("https://graph.instagram.com/refresh_access_token", params=params)
             RequestContext.total_requests_this_run += 1
             
             if response.status_code == 200:

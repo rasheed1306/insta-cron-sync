@@ -10,8 +10,6 @@ def run_batch():
     """
     Orchestrates the sync process for all accounts.
     """
-    # Reset counter at start of run
-    RequestContext.total_requests_this_run = 0
     
     print(f"Starting batch run at {datetime.now()}")
     
@@ -47,7 +45,9 @@ def run_batch():
     print(f"Batch run completed. Total requests: {RequestContext.total_requests_this_run}")
 
 if __name__ == "__main__":
-    # Optional: Seed account for testing
+    # Reset counter at start of run
+    RequestContext.total_requests_this_run = 0
+    
     seed_initial_account()
     
     # Run the batch

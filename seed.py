@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from config import supabase, INSTAGRAM_USER_ID, INSTAGRAM_ACCESS_TOKEN
 from utils import get_instagram_api_url
 from auth import refresh_token
+from globals import RequestContext
 
 def seed_initial_account():
     """
@@ -31,13 +32,14 @@ def seed_initial_account():
                 data = response.json()
                 account_name = data.get('name', 'Initial Account')
                 print(f"Fetched account name: {account_name}")
+                RequestContext.total_requests_this_run += 1
             else:
                 print(f"Failed to fetch account name: {response.text}")
         except Exception as e:
             print(f"Error fetching account name: {e}")
 
-        # Calculate a default expiry (e.g. 60 days from now) since we don't know when it was created
-        expires_at = datetime.now(timezone.utc) + timedelta(days=60)
+        # Temporary set expiry token to be now to force refresh on first run
+        expires_at = datetime.now(timezone.utc)
         
         account_data = {
             'ig_user_id': ig_user_id,
@@ -49,6 +51,7 @@ def seed_initial_account():
         supabase.table('instagram_accounts').insert(account_data).execute()
         account = supabase.table('instagram_accounts').select("*").eq('ig_user_id', ig_user_id).execute().data[0]
         refresh_token(account)
+
         print("Initial account seeded.")
     else:
         print("Initial account already exists.")

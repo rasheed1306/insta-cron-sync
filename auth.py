@@ -69,5 +69,5 @@ def refresh_token(account):
             print(f"Error refreshing token: {e}")
             return False
     else:
-        # print(f"Token for {account['account_name']} is still valid.")
+        print(f"Token for {account['account_name']} is still valid.")
         return True

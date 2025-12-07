@@ -1,25 +1,22 @@
+import os
 import requests
 from datetime import datetime, timedelta, timezone
-from config import supabase, INSTAGRAM_USER_ID, INSTAGRAM_ACCESS_TOKEN
+from config import supabase
 from utils import get_instagram_api_url
 from auth import refresh_token
 from globals import RequestContext
 
-def seed_initial_account():
+def seed_account(ig_user_id, access_token):
     """
-    Helper to seed the initial account from .env if it doesn't exist.
+    Seeds a single account if it doesn't exist.
     """
-    ig_user_id = INSTAGRAM_USER_ID
-    access_token = INSTAGRAM_ACCESS_TOKEN
-    
     if not ig_user_id or not access_token:
-        print("Missing initial account details in .env, skipping seed.")
         return
 
     # Check if exists
     res = supabase.table('instagram_accounts').select("*").eq('ig_user_id', ig_user_id).execute()
     if not res.data:
-        print("Seeding initial account from .env...")
+        print(f"Seeding account {ig_user_id} from .env...")
 
         # Fetch the actual Instagram account name
         account_name = 'Initial Account'  # Fallback
@@ -52,6 +49,35 @@ def seed_initial_account():
         account = supabase.table('instagram_accounts').select("*").eq('ig_user_id', ig_user_id).execute().data[0]
         refresh_token(account)
 
-        print("Initial account seeded.")
+        print(f"Account {ig_user_id} seeded.")
     else:
-        print("Initial account already exists.")
+        print(f"Account {ig_user_id} already exists.")
+
+def seed_initial_account():
+    """
+    Scans environment variables for INSTAGRAM_USER_ID* and seeds them.
+    """
+    print("Scanning environment variables for seed accounts...")
+    
+    # Find all keys that start with INSTAGRAM_USER_ID
+    env_vars = os.environ
+    user_keys = [key for key in env_vars if key.startswith("INSTAGRAM_USER_ID")]
+    
+    if not user_keys:
+        print("No INSTAGRAM_USER_ID* variables found in environment.")
+        return
+
+    for user_key in user_keys:
+        user_id = env_vars.get(user_key)
+        if not user_id:
+            continue
+            
+        # Determine the suffix (e.g., "", "_2", "_3") to find matching token
+        suffix = user_key.replace("INSTAGRAM_USER_ID", "")
+        token_key = f"INSTAGRAM_ACCESS_TOKEN{suffix}"
+        access_token = env_vars.get(token_key)
+        
+        if access_token:
+            seed_account(user_id, access_token)
+        else:
+            print(f"Skipping {user_key}: No corresponding {token_key} found.")

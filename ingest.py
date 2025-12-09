@@ -105,3 +105,46 @@ def fetch_new_posts(account):
             }).eq('id', account['id']).execute()
             
     print(f"Inserted {posts_inserted} new posts for {account['account_name']}.")
+
+def refresh_post_media_url(media_id, access_token):
+    """
+    Refreshes the media_url for a specific post by fetching it again from Instagram.
+    Useful when the stored media_url expires (returns 403).
+    """
+    print(f"Refreshing media URL for post {media_id}...")
+    
+    if RequestContext.total_requests_this_run >= RequestContext.MAX_REQUESTS_ALLOWED:
+        print("Rate limit reached, cannot refresh media URL.")
+        return False
+
+    url = get_instagram_api_url(f"{media_id}")
+    params = {
+        'fields': 'media_url,permalink',
+        'access_token': access_token
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        RequestContext.total_requests_this_run += 1
+
+        if response.status_code == 200:
+            data = response.json()
+            new_media_url = data.get('media_url') or data.get('permalink')
+            
+            if new_media_url:
+                # Update DB
+                supabase.table('instagram_posts').update({
+                    'media_url': new_media_url
+                }).eq('media_id', media_id).execute()
+                
+                print(f"Successfully refreshed media URL for post {media_id}.")
+                return True
+            else:
+                print(f"No media_url found for post {media_id}.")
+                return False
+        else:
+            print(f"Failed to refresh media URL: {response.text}")
+            return False
+    except Exception as e:
+        print(f"Error refreshing media URL: {e}")
+        return False
